@@ -29,6 +29,7 @@ DB_PORT=5432
 DB_USER=postgres
 DB_PASS=postgres
 DB_NAME=cookpac_db
+CLOUDINARY_URL=your_url
 ```
 
 3. Start database:
