@@ -5,6 +5,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger";
 
 import userRouter from "./routes/user.route";
+import areaRouter from "./routes/area.route";
 
 
 // Create Express app and configure middleware
@@ -16,6 +17,7 @@ app.use(cors());
 
 // Endpoints
 app.use("/api/users", userRouter);
+app.use("/api/areas", areaRouter);
 app.get("/api/health", (_, res) => {res.json({ status: "ok" });});
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use((_, res) => {res.status(404).json({ status: "error", message: "Route not found" });});
