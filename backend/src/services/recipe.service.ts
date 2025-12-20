@@ -337,4 +337,20 @@ export class RecipeService {
     // Delegate to vote service
     await this.voteService.removeVote(userId, recipeId);
   }
+  async searchRecipesByText(filters: {
+    keyword?: string;
+    ingredientNames?: string[];
+    areaName?: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 5;
+
+    return await this.recipeRepository.filterRecipesWithKeyword({
+      ...filters,
+      page,
+      pageSize
+    });
+  }
 }
