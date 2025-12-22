@@ -6,10 +6,12 @@ import RecipePage from './pages/RecipePage';
 import SettingPage from './pages/SettingPage';
 import RecipeDetailPage from './pages/RecipeDetailPage';
 import AssistantPage from './pages/AssistantPage';
+import BotPage from './pages/BotPage';
 
 import { Toaster } from './components/ui/sonner';
 import { HomePageLayout } from './components/HomePageLayout';
 import { CommonLayout } from './components/CommonLayout';
+
 
 function App() {
   return (
@@ -20,6 +22,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
           </Route>
           <Route element={<CommonLayout />}>
+            <Route path="/bot" element={<BotPage />} />
             <Route path="/notifications" element={<NotificationPage />} />
             <Route path="/recipes" element={<RecipePage />} />
             <Route path="/recipes/:id" element={<RecipeDetailPage />} />
