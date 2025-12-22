@@ -20,7 +20,6 @@ export class AuthService {
   private userRepository: UserRepository;
   private refreshTokenRepository: RefreshTokenRepository;
   private jwtAccessSecret: string;
-  private jwtRefreshSecret: string;
   private jwtAccessExpiresIn: string;
   private jwtRefreshExpiresIn: string;
 
@@ -31,7 +30,6 @@ export class AuthService {
     this.userRepository = userRepository;
     this.refreshTokenRepository = refreshTokenRepository;
     this.jwtAccessSecret = process.env.JWT_ACCESS_SECRET || "access-secret-key";
-    this.jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || "refresh-secret-key";
     this.jwtAccessExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN || "15m";
     this.jwtRefreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
   }
