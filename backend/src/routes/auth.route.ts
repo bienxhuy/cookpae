@@ -3,6 +3,7 @@ import { AppDataSource } from "../data-source";
 import { UserRepository } from "../repositories/user.repository";
 import { RefreshTokenRepository } from "../repositories/refreshToken.repository";
 import { AuthService } from "../services/auth.service";
+import { GoogleAuthService } from "../services/google-auth.service";
 import { AuthController } from "../controllers/auth.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 
@@ -12,8 +13,10 @@ const router = Router();
 const userRepository = new UserRepository(AppDataSource);
 const refreshTokenRepository = new RefreshTokenRepository(AppDataSource);
 
-// Initialize service
+// Initialize services
 const authService = new AuthService(userRepository, refreshTokenRepository);
+const googleAuthService = new GoogleAuthService(userRepository);
+const passport = googleAuthService.getPassportInstance();
 
 // Initialize controller
 const authController = new AuthController(authService);
@@ -241,12 +244,6 @@ router.post("/login", authController.login);
  *               example: refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Path=/api/auth/refresh; HttpOnly; SameSite=Lax
  *             description: New refresh token set as HttpOnly cookie
  *       401:
- *         description: Unauthorized - Refresh token is required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
  *         description: Unauthorized - Invalid or expired refresh token
  *         content:
  *           application/json:
@@ -323,5 +320,46 @@ router.post("/logout", authController.logout);
  *               $ref: '#/components/schemas/Error'
  */
 router.post("/logout-all", authenticate(authService), authController.logoutAll);
+
+/**
+ * @swagger
+ * /api/auth/google:
+ *   get:
+ *     summary: Initiate Google OAuth login
+ *     description: Redirects to Google OAuth consent screen
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect to Google OAuth
+ */
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"], session: false })
+);
+
+/**
+ * @swagger
+ * /api/auth/google/callback:
+ *   get:
+ *     summary: Handle Google OAuth callback
+ *     description: Processes Google OAuth response and returns tokens
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: Authorization code from Google
+ *     responses:
+ *       302:
+ *         description: Redirect to frontend with user data
+ *       401:
+ *         description: Authentication failed
+ */
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { session: false, failureRedirect: `${process.env.CLIENT_URL || "http://localhost:5173"}/` }),
+  authController.googleCallback
+);
 
 export default router;
