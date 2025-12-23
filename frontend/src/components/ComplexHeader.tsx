@@ -18,7 +18,7 @@ export const ComplexHeader = () => {
     <header>
       <div className="flex justify-between items-center p-4 sm:px-15 border-b border-gray-200">
         <p
-          className="sm:text-3xl text-2xl font-extrabold tracking-tight text-dark-blue cursor-pointer"
+          className="text-2xl sm:text-3xl font-extrabold tracking-tight text-dark-blue cursor-pointer h-[36px]"
           onClick={goHome}
         >
           Cookpae
@@ -33,7 +33,7 @@ export const ComplexHeader = () => {
             onClick={() => setAuthDialogOpen(true)}
             className="rounded-full cursor-pointer text-dark-blue hover:bg-dark-blue-light hover:text-white"
           >
-            <User className="h-5 w-5" />
+            <User className="size-5" />
           </Button>
         )}
       </div>
