@@ -7,7 +7,6 @@ import SettingPage from './pages/SettingPage';
 import RecipeDetailPage from './pages/RecipeDetailPage';
 import AssistantPage from './pages/AssistantPage';
 import BotPage from './pages/BotPage';
-
 import { Toaster } from './components/ui/sonner';
 import { HomePageLayout } from './components/HomePageLayout';
 import { CommonLayout } from './components/CommonLayout';
@@ -21,15 +20,19 @@ function App() {
           <Route element={<HomePageLayout />}>
             <Route path="/" element={<HomePage />} />
           </Route>
+
           <Route element={<CommonLayout />}>
             <Route path="/bot" element={<BotPage />} />
-            <Route path="/notifications" element={<NotificationPage />} />
-            <Route path="/recipes" element={<RecipePage />} />
+            <Route path="/recipes" element={<RecipePage initialTab="favorite" />} />
+            <Route path="/recipes/my" element={<RecipePage initialTab="your_recipe" />} />
+            <Route path="/notifications" element={<RecipePage initialTab="notification" />} />
+            <Route path="/ingredients" element={<RecipePage initialTab="ingredient" />} />
+
             <Route path="/recipes/:id" element={<RecipeDetailPage />} />
             <Route path="/settings" element={<SettingPage />} />
             <Route path="/assistant" element={<AssistantPage />} />
-            {/* Fallback route */}
-            <Route path="*" element={<div className="text-center py-10"> 404 Not Found </div>} />
+
+            <Route path="*" element={<div className="text-center py-10">404 Not Found</div>} />
           </Route>
         </Routes>
       </BrowserRouter>
@@ -37,5 +40,6 @@ function App() {
     </>
   );
 }
+
 
 export default App;
