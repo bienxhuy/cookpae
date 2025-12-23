@@ -169,7 +169,7 @@ export const AuthCard = ({ open, onOpenChange }: AuthCardProps) => {
                     <FormControl>
                       <Input
                         type="text"
-                        placeholder="John Doe"
+                        placeholder="Faker"
                         disabled={isLoading}
                         {...field}
                       />
