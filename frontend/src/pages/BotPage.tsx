@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
 import FoodCard2 from '../components/FoodCard2';
+import { naturalQuery } from '../services/query.service'; 
+import { getRecipeById } from '../services/recipe.service';
 
 interface Message {
   id: string;
@@ -13,54 +15,12 @@ interface Message {
     description: string;
     imageUrl: string;
   };
-  fullRecipe?: {
-    title: string;
-    tags: string[];
-    description: string;
-    ingredients: string[];
-    steps: string[];
-  };
 }
 
 export default function BotPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'bot',
-      content: 'Bot can inject component for user to easily navigate',
-    },
-    {
-      id: '2',
-      type: 'bot',
-      content: 'Well, if you want something like that, you can try NemchuaThanhHoa',
-      recipeCard: {
-        title: 'Nem chua Thanh Hóa',
-        author: 'AnhTrai36',
-        likes: 3636,
-        description: 'Cách làm nem chua Thanh Hóa cực ngon tại nhà, lên men tự nhiên...',
-        imageUrl:"/pwa-512x512.png",
-      },
-    },
-    {
-      id: '3',
-      type: 'bot',
-      content: 'or',
-    },
-    {
-      id: '4',
-      type: 'bot',
-      content: 'In that case, I can suggest you to cook this meal\nThis one is new',
-      fullRecipe: {
-        title: 'Chả cá Vũng Tàu',
-        tags: ['Việt Nam', 'Cay', 'Biển'],
-        description: 'Món chả cá thơm lừng, đậm đà hương vị miền biển Vũng Tàu.',
-        ingredients: ['Cá lăng/cá basa', 'Thì là', 'Hành lá', 'Gia vị', 'Ớt tươi'],
-        steps: ['Sơ chế cá sạch sẽ', 'Ướp gia vị 30 phút', 'Chiên vàng hai mặt', 'Thêm thì là và hành lá trước khi tắt bếp'],
-      },
-    },
-  ]);
-
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -71,37 +31,106 @@ export default function BotPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
 
-    const newMessage: Message = {
+    const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: inputValue,
+      content: inputValue.trim(),
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
+    setIsLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
+    const thinkingMessage: Message = {
+      id: 'thinking-' + Date.now(),
+      type: 'bot',
+      content: 'Đang tìm công thức phù hợp cho bạn... ⏳',
+    };
+    setMessages(prev => [...prev, thinkingMessage]);
+
+    try {
+      const response = await naturalQuery({ prompt: inputValue.trim() });
+      console.log('Response from naturalQuery:', response);
+      setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
+
+      if (!response.success || !response.data) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          type: 'bot',
+          content: 'Xin lỗi, mình gặp lỗi khi xử lý yêu cầu. Bạn thử lại nhé!',
+        }]);
+        return;
+      }
+
+      const { answer, recipeId } = response.data;
+
+      console.log('Phản hồi từ naturalQuery:');
+      console.log('   • answer:', answer);
+      console.log('   • recipeId:', recipeId);
+
+      const botMessage: Message = {
+        id: Date.now().toString(),
         type: 'bot',
-        content: 'Cảm ơn bạn! Hôm nay bạn muốn nấu món gì nào? Mình gợi ý thêm nhé 🍳',
       };
-      setMessages(prev => [...prev, botResponse]);
-    }, 1000);
+
+      if (recipeId) {
+        try {
+          const recipeRes = await getRecipeById(recipeId);
+          console.log('Response from getRecipeById:', recipeRes);
+          if (recipeRes.status === 'success' && recipeRes.data) {
+            const recipe = recipeRes.data;
+
+            botMessage.content = 'Mình tìm thấy công thức này từ cộng đồng CookPac đây ạ!';
+
+            botMessage.recipeCard = {
+              title: recipe.name || 'Công thức không tên',
+              author: recipe.user?.name || recipe.user?.name || 'Cộng đồng',
+              likes: (recipe.votes?.length || 0) + (recipe.votedUserIds?.length || 0),
+              description: recipe.description || 'Công thức được cộng đồng chia sẻ và yêu thích',
+              imageUrl: recipe.thumbnails?.[0]?.url || '/pwa-512x512.png',
+            };
+          } else {
+            botMessage.content = 'Mình tìm thấy một công thức phù hợp từ cộng đồng nhưng tạm thời chưa tải được chi tiết.';
+          }
+        } catch (err) {
+          console.error('Error fetching recipe:', err);
+          botMessage.content = 'Có công thức từ cộng đồng nhưng tạm thời không xem được chi tiết.';
+        }
+      } 
+      else {
+        botMessage.content = answer || 'Đây là công thức mình gợi ý cho bạn nhé! ✨';
+      }
+
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Lỗi tổng thể:', error);
+      setMessages(prev => prev.filter(m => m.id !== thinkingMessage.id));
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'bot',
+        content: 'Có lỗi kết nối. Bạn thử lại sau nhé!',
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSaveRecipe = (recipeTitle: string) => {
-    alert(`Đã lưu công thức "${recipeTitle}"! Đang chuyển đến trang tạo/sửa công thức...`);
-  };
+  useEffect(() => {
+    setMessages([
+      {
+        id: 'greeting',
+        type: 'bot',
+        content: 'Chào bạn! Mình là trợ lý nấu ăn AI đây 🍳\nBạn muốn nấu món gì hôm nay? Mình sẽ tìm công thức ngon nhất từ cộng đồng cho bạn nhé!',
+      },
+    ]);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen w-auto bg-gray-100">
 
-      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.map((message) => (
@@ -124,14 +153,14 @@ export default function BotPage() {
                   }`}
                 >
                   {message.content && (
-                    <p className="whitespace-pre-line text-base leading-relaxed">
+                    <p className="whitespace-pre-line text-base leading-relaxed mb-4">
                       {message.content}
                     </p>
                   )}
 
-                  {/* Recipe Card */}
+                  {/* Chỉ hiển thị FoodCard2 khi có recipeCard */}
                   {message.recipeCard && (
-                    <div className="p-4 mt-4 -mx-5 -mb-3">
+                    <div className="mt-4 mb-3 mx-2">
                       <FoodCard2
                         title={message.recipeCard.title}
                         author={message.recipeCard.author}
@@ -139,55 +168,6 @@ export default function BotPage() {
                         description={message.recipeCard.description}
                         imageUrl={message.recipeCard.imageUrl}
                       />
-                    </div>
-                  )}
-
-                  {/* Full Recipe */}
-                  {message.fullRecipe && (
-                    <div className="mt-4 bg-gray-50 border border-gray-300 rounded-xl p-5">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">
-                        {message.fullRecipe.title}
-                      </h3>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {message.fullRecipe.tags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <p className="text-sm text-gray-700 mb-4 italic">
-                        {message.fullRecipe.description}
-                      </p>
-
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-semibold text-gray-800 mb-2">Nguyên liệu:</h4>
-                          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                            {message.fullRecipe.ingredients.map((ing, i) => (
-                              <li key={i}>{ing}</li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        <div>
-                          <h4 className="font-semibold text-gray-800 mb-2">Các bước:</h4>
-                          <ol className="list-decimal list-inside text-sm text-gray-700 space-y-2">
-                            {message.fullRecipe.steps.map((step, i) => (
-                              <li key={i}>{step}</li>
-                            ))}
-                          </ol>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleSaveRecipe(message.fullRecipe!.title)}
-                        className="mt-5 w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg transition-colors shadow-md"
-                      >
-                        Lưu công thức này
-                      </button>
                     </div>
                   )}
                 </div>
@@ -202,7 +182,6 @@ export default function BotPage() {
         </div>
       </div>
 
-      {/* Input Area */}
       <div className="bg-white border-t border-gray-200 px-4 py-4">
         <div className="max-w-4xl mx-auto flex gap-3">
           <input
@@ -210,12 +189,13 @@ export default function BotPage() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-            placeholder="Nhập tin nhắn..."
+            placeholder="Nhập món bạn muốn nấu..."
             className="flex-1 px-5 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+            disabled={isLoading}
           />
           <button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || isLoading}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-4 rounded-full transition-colors shadow-md disabled:cursor-not-allowed"
           >
             <Send className="w-5 h-5" />
