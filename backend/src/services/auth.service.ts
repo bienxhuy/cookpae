@@ -164,7 +164,7 @@ export class AuthService {
   /**
    * Generate access token
    */
-  private generateAccessToken(user: User): string {
+  generateAccessToken(user: User): string {
     const payload = {
       sub: user.id,
       role: user.role,
@@ -180,7 +180,7 @@ export class AuthService {
   /**
    * Generate and store refresh token
    */
-  private async generateAndStoreRefreshToken(
+  async generateAndStoreRefreshToken(
     user: User,
     expiresAt?: Date
   ): Promise<string> {

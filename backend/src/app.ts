@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import passport from "passport";
 
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger";
@@ -11,6 +12,8 @@ import areaRouter from "./routes/area.route";
 import categoryRouter from "./routes/category.route";
 import ingredientRouter from "./routes/ingredient.route";
 import recipeRouter from "./routes/recipe.route";
+import queryRouter from "./routes/query.route";
+import document from "./routes/document.route";
 
 
 // Create Express app and configure middleware
@@ -22,11 +25,14 @@ app.use(cors(
   {origin: "http://localhost:5173", credentials: true}
 ));
 app.use(cookieParser());
+app.use(passport.initialize());
 
 
 // Endpoints
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
+app.use("/api/query", queryRouter);
+app.use("/api/documents", document);
 app.use("/api/areas", areaRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/ingredients", ingredientRouter);
@@ -37,3 +43,4 @@ app.use((_, res) => {res.status(404).json({ status: "error", message: "Route not
 
 
 export default app;
+

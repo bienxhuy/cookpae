@@ -1,5 +1,6 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/auth.service";
+import { User } from "../entities/User";
 
 export class AuthController {
   private authService: AuthService;
@@ -282,5 +283,48 @@ export class AuthController {
 
     return value * units[unit];
   }
-}
 
+  /**
+   * Handle Google OAuth callback
+   * GET /auth/google/callback
+   */
+  googleCallback = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const user = req.user as User;
+      const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
+      if (!user) {
+        res.redirect(clientUrl);
+        return;
+      }
+
+      // Generate tokens for the authenticated user
+      const accessToken = this.authService.generateAccessToken(user);
+      const refreshToken = await this.authService.generateAndStoreRefreshToken(user);
+
+      // Set refresh token as HttpOnly cookie
+      this.setRefreshTokenCookie(res, refreshToken);
+
+      // Set auth data in temporary cookie to be read by frontend
+      res.cookie("google_auth_data", JSON.stringify({
+        accessToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        }
+      }), {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30000, // 30 seconds
+      });
+
+      res.redirect(`${clientUrl}/auth/google/callback`);
+    } catch (error) {
+      console.error("Google callback error:", error);
+      res.redirect(process.env.CLIENT_URL || "http://localhost:5173");
+    }
+  };
+}
