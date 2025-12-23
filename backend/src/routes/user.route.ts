@@ -1,14 +1,42 @@
-// User route
+// Recipe route
 import { Router } from 'express';
+import { RecipeController } from '../controllers/recipe.controller';
 import { UserController } from '../controllers/user.controller';
+
+import { RecipeService } from '../services/recipe.service';
 import { UserService } from '../services/user.service';
+import { AreaService } from '../services/area.service';
+import { CategoryService } from '../services/category.service';
+import { IngredientService } from '../services/ingredient.service';
+import { VoteService } from '../services/vote.service';
+
+import { RecipeRepository } from '../repositories/recipe.repository';
 import { UserRepository } from '../repositories/user.repository';
+import { AreaRepository } from '../repositories/area.repository';
+import { CategoryRepository } from '../repositories/category.repository';
+import { IngredientRepository } from '../repositories/ingredient.repository';
+import { VoteRepository } from '../repositories/vote.repository';
+
 import { AppDataSource } from '../data-source';
 
-// Initialize repository, service, and controller using dependency injection
+// Initialize repositories
+const recipeRepository = new RecipeRepository(AppDataSource);
 const userRepository = new UserRepository(AppDataSource);
+const areaRepository = new AreaRepository(AppDataSource);
+const categoryRepository = new CategoryRepository(AppDataSource);
+const ingredientRepository = new IngredientRepository(AppDataSource);
+const voteRepository = new VoteRepository(AppDataSource);
+
+// Initialize services
 const userService = new UserService(userRepository);
-const userController = new UserController(userService);
+const areaService = new AreaService(areaRepository);
+const categoryService = new CategoryService(categoryRepository);
+const ingredientService = new IngredientService(ingredientRepository);
+const voteService = new VoteService(voteRepository, userService);
+const recipeService = new RecipeService(recipeRepository, userService, areaService, categoryService, ingredientService, voteService);
+
+// Initialize controller
+const userController = new UserController(userService, recipeService);
 
 // Define routes
 // TODO: Add authentication middleware 
@@ -121,6 +149,54 @@ userRouter.get('/:id', (req, res) => userController.getUser(req, res));
  *               $ref: '#/components/schemas/Error'
  */
 userRouter.get('/:id/recipes', (req, res) => userController.getUserRecipes(req, res));
+
+/**
+ * @swagger
+ * /api/users/{id}/recipes/count:
+ *   get:
+ *     summary: Get total number of recipes created by user
+ *     description: Returns the total count of recipes created by the specified user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Recipe count retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     count:
+ *                       type: integer
+ *                       description: Total number of recipes created by user
+ *                       example: 25
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+userRouter.get('/:id/recipes/count', (req, res) => userController.getUserRecipesCount(req, res));
 
 /**
  * @swagger

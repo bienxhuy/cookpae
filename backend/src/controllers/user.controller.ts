@@ -1,12 +1,15 @@
 // User controller
 import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
+import { RecipeService } from '../services/recipe.service';
 
 export class UserController {
   private userService: UserService;
+  private recipeService: RecipeService;
 
-  constructor(userService: UserService) {
+  constructor(userService: UserService, recipeService: RecipeService) {
     this.userService = userService;
+    this.recipeService = recipeService;
   }
 
   // Get user by ID
@@ -54,7 +57,7 @@ export class UserController {
         return;
       }
 
-      const result = await this.userService.getUserRecipes(userId, page, pageSize);
+      const result = await this.recipeService.getUserRecipes(userId, page, pageSize);
       res.json({ status: "success", data: result });
     }
     catch (error) {
@@ -78,11 +81,33 @@ export class UserController {
         return;
       }
 
-      const result = await this.userService.getUserVotedRecipes(userId, page, pageSize);
+      const result = await this.recipeService.getUserVotedRecipes(userId, page, pageSize);
       res.json({ status: "success", data: result });
     }
     catch (error) {
       console.error('Error fetching user voted recipes:', error);
+      res.status(500).json({ status: "error", message: 'Internal server error' });
+    }
+  }
+
+  // Get total number of recipes created by user
+  // GET /users/:id/recipes/count
+  async getUserRecipesCount(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = parseInt(req.params.id, 10);
+
+      // Check if user exists
+      const user = await this.userService.getUserById(userId);
+      if (!user) {
+        res.status(404).json({ status: "error", message: 'User not found' });
+        return;
+      }
+
+      const count = await this.recipeService.getUserRecipesCount(userId);
+      res.json({ status: "success", data: { count } });
+    }
+    catch (error) {
+      console.error('Error fetching user recipes count:', error);
       res.status(500).json({ status: "error", message: 'Internal server error' });
     }
   }

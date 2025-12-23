@@ -2,12 +2,15 @@
 // This context manages user authentication state and provides methods for login, registration, and logout.
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import * as authService from "@/services/auth.service";
 import { setAccessToken as setAxiosToken } from "@/lib/axios";
+
+import { BaseUser } from "@/types/user.type";
+import * as authService from "@/services/auth.service";
 
 // Define the shape of the AuthContext
 interface AuthContextType {
   accessToken: string | null;
+  user: BaseUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -23,7 +26,38 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // AuthProvider component to wrap the app and provide auth state
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [user, setUser] = useState<BaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const USER_STORAGE_KEY = "auth_user";
+
+  // Load user from localStorage
+  const loadUserFromStorage = useCallback(() => {
+    try {
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to load user from storage:", error);
+      localStorage.removeItem(USER_STORAGE_KEY);
+    }
+  }, []);
+
+  // Save user to localStorage
+  const saveUserToStorage = useCallback((userData: BaseUser) => {
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+      setUser(userData);
+    } catch (error) {
+      console.error("Failed to save user to storage:", error);
+    }
+  }, []);
+
+  // Clear user from localStorage
+  const clearUserFromStorage = useCallback(() => {
+    localStorage.removeItem(USER_STORAGE_KEY);
+    setUser(null);
+  }, []);
 
   // Sync access token with axios instance
   const updateToken = useCallback((token: string | null) => {
@@ -37,42 +71,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const bootstrapAuth = useCallback(async () => {
     try {
+      // Load user from localStorage first
+      loadUserFromStorage();
+      
+      // Then try to refresh access token
       const token = await authService.refreshAccessToken();
       updateToken(token);
     } catch (error) {
-      // If refresh fails (401), ignore - user is not logged in
+      // If refresh fails (401), clear everything - user is not logged in
       updateToken(null);
+      clearUserFromStorage();
     } finally {
       setIsLoading(false);
     }
-  }, [updateToken]);
+  }, [updateToken, loadUserFromStorage, clearUserFromStorage]);
 
   // Bootstrap auth on mount
   useEffect(() => {
     bootstrapAuth();
   }, [bootstrapAuth]);
 
-  // Listen for logout events from axios interceptor
+  // Listen for logout events from axios interceptor when 401 occurs
   useEffect(() => {
     const handleLogout = () => {
       updateToken(null);
+      clearUserFromStorage();
     };
 
     window.addEventListener("auth:logout", handleLogout);
     return () => window.removeEventListener("auth:logout", handleLogout);
-  }, [updateToken]);
+  }, [updateToken, clearUserFromStorage]);
 
-  // Auth methods
+
+  // AUTH METHODS
   // Centralized methods to handle token updates
 
   const login = async (email: string, password: string) => {
-    const token = await authService.login({ email, password });
-    updateToken(token);
+    const { accessToken, user } = await authService.login({ email, password });
+    updateToken(accessToken);
+    saveUserToStorage(user);
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const token = await authService.register({ name, email, password });
-    updateToken(token);
+    const { accessToken, user } = await authService.register({ name, email, password });
+    updateToken(accessToken);
+    saveUserToStorage(user);
   };
 
   const logout = async () => {
@@ -80,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logout();
     } finally {
       updateToken(null);
+      clearUserFromStorage();
     }
   };
 
@@ -88,12 +132,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logoutAll();
     } finally {
       updateToken(null);
+      clearUserFromStorage();
     }
   };
 
   // Initialize context value
   const value: AuthContextType = {
     accessToken,
+    user,
     isAuthenticated: !!accessToken,
     isLoading,
     login,

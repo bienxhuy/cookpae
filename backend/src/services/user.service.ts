@@ -21,32 +21,4 @@ export class UserService {
   async removeUserById(id: number): Promise<void> {
     await this.userRepository.deleteById(id);
   }
-
-  async getUserRecipes(userId: number, page: number = 1, pageSize: number = 10) {
-    const { recipes, total } = await this.userRepository.findUserRecipes(userId, page, pageSize);
-    const totalPages = Math.ceil(total / pageSize);
-    return {
-      recipes,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages,
-      },
-    };
-  }
-
-  async getUserVotedRecipes(userId: number, page: number = 1, pageSize: number = 10) {
-    const { recipes, total } = await this.userRepository.findUserVotedRecipes(userId, page, pageSize);
-    const totalPages = Math.ceil(total / pageSize);
-    return {
-      recipes,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages,
-      },
-    };
-  }
 }

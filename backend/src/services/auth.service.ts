@@ -232,5 +232,19 @@ export class AuthService {
 
     return value * units[unit];
   }
+
+  /**
+   * Get user from access token
+   */
+  async getUserFromToken(accessToken: string): Promise<User> {
+    const decoded = this.verifyAccessToken(accessToken);
+    const user = await this.userRepository.findById(decoded.sub);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return user;
+  }
 }
 
