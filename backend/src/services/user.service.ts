@@ -10,7 +10,8 @@ export class UserService {
   }
 
   async registerUser(name: string, email: string, password: string): Promise<User> {
-    return this.userRepository.create(name, email, password);
+    const user = new User(name, email, password);
+    return this.userRepository.save(user);
   }
 
   async getUserById(id: number): Promise<User | null> {
@@ -19,5 +20,33 @@ export class UserService {
 
   async removeUserById(id: number): Promise<void> {
     await this.userRepository.deleteById(id);
+  }
+
+  async getUserRecipes(userId: number, page: number = 1, pageSize: number = 10) {
+    const { recipes, total } = await this.userRepository.findUserRecipes(userId, page, pageSize);
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      recipes,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  async getUserVotedRecipes(userId: number, page: number = 1, pageSize: number = 10) {
+    const { recipes, total } = await this.userRepository.findUserVotedRecipes(userId, page, pageSize);
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      recipes,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+    };
   }
 }

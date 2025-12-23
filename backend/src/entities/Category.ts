@@ -10,6 +10,18 @@ export class Category extends BaseEntity {
   @Column()
   name!: string;
 
+  @Column({ default: true })
+  isActive!: boolean;
+
   @ManyToMany(() => Recipe, recipe => recipe.categories)
   recipes!: Recipe[];
+
+  constructor(name?: string) {
+    super();
+    if (name) {
+      this.name = name;
+      this.isActive = true;
+      this.recipes = [];
+    }
+  }
 }

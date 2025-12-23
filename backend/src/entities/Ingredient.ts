@@ -12,4 +12,12 @@ export class Ingredient extends BaseEntity {
 
   @OneToMany(() => RecipeIngredient, recipeIngredient => recipeIngredient.ingredient)
   recipeIngredients!: RecipeIngredient[];
+
+  constructor(name?: string) {
+    super();
+    if (name) {
+      this.name = name;
+      this.recipeIngredients = [];
+    }
+  }
 }

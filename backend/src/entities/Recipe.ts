@@ -40,4 +40,19 @@ export class Recipe extends BaseEntity {
 
   @OneToMany(() => Vote, vote => vote.recipe)
   votes!: Vote[];
+
+  constructor(name?: string, description?: string, user?: User, area?: Area) {
+    super();
+    if (name && description && user && area) {
+      this.name = name;
+      this.description = description;
+      this.user = user;
+      this.area = area;
+      this.steps = [];
+      this.thumbnails = [];
+      this.recipeIngredients = [];
+      this.categories = [];
+      this.votes = [];
+    }
+  }
 }

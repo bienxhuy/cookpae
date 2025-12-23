@@ -12,6 +12,7 @@ import { RecipeIngredient } from "./entities/RecipeIngredient";
 import { Step } from "./entities/Step";
 import { Attachment } from "./entities/Attachment";
 import { Notification } from "./entities/Notification";
+import { RefreshToken } from "./entities/RefreshToken";
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ export const AppDataSource = new DataSource({
     RecipeIngredient, 
     Step, 
     Attachment, 
-    Notification],
+    Notification,
+    RefreshToken],
   migrations: ["src/migrations/*.ts"],
 });

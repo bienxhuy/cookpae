@@ -18,4 +18,14 @@ export class Notification extends BaseEntity {
 
   @ManyToOne(() => User, user => user.notifications)
   user!: User;
+
+  constructor(content?: string, link?: string, user?: User) {
+    super();
+    if (content && link && user) {
+      this.content = content;
+      this.link = link;
+      this.isRead = false;
+      this.user = user;
+    }
+  }
 }

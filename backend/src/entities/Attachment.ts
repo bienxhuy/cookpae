@@ -8,6 +8,9 @@ export class Attachment extends BaseEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ unique: true })
+  publicId!: string;
+
   @Column()
   url!: string;
 
@@ -16,4 +19,12 @@ export class Attachment extends BaseEntity {
 
   @ManyToOne(() => Recipe, recipe => recipe.thumbnails, { nullable: true })
   recipe?: Recipe;
+
+  constructor(publicId?: string, url?: string) {
+    super();
+    if (publicId && url) {
+      this.publicId = publicId;
+      this.url = url;
+    }
+  }
 }

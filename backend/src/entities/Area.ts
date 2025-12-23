@@ -10,6 +10,18 @@ export class Area extends BaseEntity {
   @Column()
   name!: string;
 
+  @Column({ default: true })
+  isActive!: boolean;
+
   @OneToMany(() => Recipe, recipe => recipe.area)
   recipes!: Recipe[];
+
+  constructor(name?: string) {
+    super();
+    if (name) {
+      this.name = name;
+      this.isActive = true;
+      this.recipes = [];
+    }
+  }
 }

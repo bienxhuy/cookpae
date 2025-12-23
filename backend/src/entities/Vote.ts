@@ -13,4 +13,12 @@ export class Vote extends BaseEntity {
 
   @ManyToOne(() => Recipe, recipe => recipe.votes)
   recipe!: Recipe;
+
+  constructor(user?: User, recipe?: Recipe) {
+    super();
+    if (user && recipe) {
+      this.user = user;
+      this.recipe = recipe;
+    }
+  }
 }

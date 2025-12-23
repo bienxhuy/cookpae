@@ -30,4 +30,17 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Notification, notification => notification.user)
   notifications!: Notification[];
+
+  constructor(name?: string, email?: string, password?: string) {
+    super();
+    if (name && email && password) {
+      this.name = name;
+      this.email = email;
+      this.password = password;
+      this.role = ERole.REGULAR_USER;
+      this.recipes = [];
+      this.votes = [];
+      this.notifications = [];
+    }
+  }
 }
