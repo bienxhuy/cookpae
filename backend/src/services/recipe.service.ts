@@ -316,6 +316,38 @@ export class RecipeService {
     };
   }
 
+  async getUserRecipes(userId: number, page: number = 1, pageSize: number = 10) {
+    const { recipes, total } = await this.recipeRepository.findUserRecipes(userId, page, pageSize);
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      recipes,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  async getUserRecipesCount(userId: number): Promise<number> {
+    return this.recipeRepository.countUserRecipes(userId);
+  }
+
+  async getUserVotedRecipes(userId: number, page: number = 1, pageSize: number = 10) {
+    const { recipes, total } = await this.recipeRepository.findUserVotedRecipes(userId, page, pageSize);
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      recipes,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+    };
+  }
+
   async voteRecipe(recipeId: number, userId: number): Promise<void> {
     // Check if recipe exists
     const recipe = await this.recipeRepository.findById(recipeId);

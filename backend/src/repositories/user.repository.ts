@@ -27,28 +27,4 @@ export class UserRepository {
   async deleteById(id: number): Promise<void> {
     await this.repository.delete(id);
   }
-
-  async findUserRecipes(userId: number, page: number = 1, pageSize: number = 10): Promise<{ recipes: Recipe[]; total: number }> {
-    const [recipes, total] = await this.recipeRepository.findAndCount({
-      where: { user: { id: userId } },
-      relations: ['user', 'area', 'categories', 'thumbnails', 'votes'],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
-    return { recipes, total };
-  }
-
-  async findUserVotedRecipes(userId: number, page: number = 1, pageSize: number = 10): Promise<{ recipes: Recipe[]; total: number }> {
-    const [recipes, total] = await this.recipeRepository.findAndCount({
-      relations: ['user', 'area', 'categories', 'thumbnails', 'votes'],
-      where: {
-        votes: {
-          user: { id: userId },
-        },
-      },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
-    return { recipes, total };
-  }
 }

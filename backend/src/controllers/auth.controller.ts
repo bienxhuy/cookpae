@@ -35,10 +35,21 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       this.setRefreshTokenCookie(res, refreshToken);
 
-      // Return access token
+      // Get user data
+      const user = await this.authService.getUserFromToken(accessToken);
+
+      // Return access token and user data
       res.status(201).json({
         status: "success",
-        data: { accessToken },
+        data: { 
+          accessToken,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          }
+        },
       });
     } catch (error) {
       if (error instanceof Error && error.message === "User already exists") {
@@ -82,10 +93,21 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       this.setRefreshTokenCookie(res, refreshToken);
 
-      // Return access token
+      // Get user data
+      const user = await this.authService.getUserFromToken(accessToken);
+
+      // Return access token and user data
       res.status(200).json({
         status: "success",
-        data: { accessToken },
+        data: { 
+          accessToken,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          }
+        },
       });
     } catch (error) {
       if (error instanceof Error && error.message === "Invalid credentials") {

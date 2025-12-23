@@ -1,4 +1,6 @@
 import axiosInstance from "@/lib/axios";
+import { BaseUser } from "@/types/user.type";
+import { ApiResponse } from "@/types/api.type";
 
 interface LoginRequest {
   email: string;
@@ -11,35 +13,41 @@ interface RegisterRequest {
   password: string;
 }
 
-interface AuthResponse {
-  status: string;
-  data: {
-    accessToken: string;
-  };
+interface AuthData {
+  accessToken: string;
+  user: BaseUser;
 }
+
+type AuthResponse = ApiResponse<AuthData>;
 
 /**
  * Register a new user
  */
-export async function register(data: RegisterRequest): Promise<string> {
+export async function register(data: RegisterRequest): Promise<{ accessToken: string; user: BaseUser }> {
   const response = await axiosInstance.post<AuthResponse>(
     "/api/auth/register",
     data,
     { withCredentials: true }
   );
-  return response.data.data.accessToken;
+  return {
+    accessToken: response.data.data.accessToken,
+    user: response.data.data.user,
+  };
 }
 
 /**
  * Login user
  */
-export async function login(data: LoginRequest): Promise<string> {
+export async function login(data: LoginRequest): Promise<{ accessToken: string; user: BaseUser }> {
   const response = await axiosInstance.post<AuthResponse>(
     "/api/auth/login",
     data,
     { withCredentials: true }
   );
-  return response.data.data.accessToken;
+  return {
+    accessToken: response.data.data.accessToken,
+    user: response.data.data.user,
+  };
 }
 
 /**
