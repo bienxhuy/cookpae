@@ -175,4 +175,42 @@ export class RecipeRepository {
     const result = await this.recipeRepository.delete(id);
     return result.affected !== 0;
   }
+  
+  async filterRecipesWithKeyword(filters: {
+    keyword?: string; 
+    ingredientNames?: string[];
+    areaName?: string;
+    page: number;
+    pageSize: number;
+  }): Promise<{ recipes: Recipe[]; total: number }> {
+    const { keyword, ingredientNames, areaName, page, pageSize } = filters;
+    
+    const queryBuilder = this.recipeRepository.createQueryBuilder('recipe')
+      .leftJoinAndSelect('recipe.user', 'user')
+      .leftJoinAndSelect('recipe.area', 'area')
+      .leftJoinAndSelect('recipe.categories', 'category')
+      .leftJoinAndSelect('recipe.thumbnails', 'thumbnail')
+      .leftJoinAndSelect('recipe.recipeIngredients', 'ri') // Cần thêm cái này
+      .leftJoinAndSelect('ri.ingredient', 'ingredient'); // Và cái này để lấy name
+
+    if (keyword) {
+      queryBuilder.andWhere('(recipe.name ILIKE :kw OR recipe.description ILIKE :kw)', { kw: `%${keyword}%` });
+    }
+
+    if (areaName) {
+      queryBuilder.andWhere('area.name ILIKE :area', { area: `%${areaName}%` });
+    }
+
+    if (ingredientNames && ingredientNames.length > 0) {
+      // Dùng ILIKE để tìm kiếm tương đối tên nguyên liệu cho linh hoạt
+      queryBuilder.andWhere('ingredient.name IN (:...names)', { names: ingredientNames });
+    }
+
+    const [recipes, total] = await queryBuilder
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+
+    return { recipes, total };
+  }
 }

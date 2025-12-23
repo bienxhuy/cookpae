@@ -13,6 +13,7 @@ import { Step } from "./entities/Step";
 import { Attachment } from "./entities/Attachment";
 import { Notification } from "./entities/Notification";
 import { RefreshToken } from "./entities/RefreshToken";
+import { Document } from "./entities/Document";
 
 dotenv.config();
 
@@ -36,6 +37,8 @@ export const AppDataSource = new DataSource({
     Step, 
     Attachment, 
     Notification,
-    RefreshToken],
+    RefreshToken,
+    Document
+  ],
   migrations: ["src/migrations/*.ts"],
 });
