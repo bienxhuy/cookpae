@@ -14,6 +14,7 @@ import ingredientRouter from "./routes/ingredient.route";
 import recipeRouter from "./routes/recipe.route";
 import queryRouter from "./routes/query.route";
 import document from "./routes/document.route";
+import notificationRouter from "./routes/notification.route";
 
 
 // Create Express app and configure middleware
@@ -37,6 +38,7 @@ app.use("/api/areas", areaRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/ingredients", ingredientRouter);
 app.use("/api/recipes", recipeRouter);
+app.use("/api/notifications", notificationRouter);
 app.get("/api/health", (_, res) => {res.json({ status: "ok" });});
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use((_, res) => {res.status(404).json({ status: "error", message: "Route not found" });});
