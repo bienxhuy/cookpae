@@ -23,6 +23,7 @@ export interface Recipe {
   thumbnails: Attachment[];
   steps: Step[];
   recipeIngredients: RecipeIngredient[];
+  votedUserIds: number[];
   createdAt: string;
   updatedAt: string;
 }

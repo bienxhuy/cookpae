@@ -1,16 +1,20 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { getRecipeById } from '../services/recipe.service';
+import { getRecipeById, voteRecipe, unvoteRecipe } from '../services/recipe.service';
 import { Recipe } from '../types/recipe.type';
 import { Button } from '../components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
+import { ArrowBigLeft, Heart } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function RecipeDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isVoting, setIsVoting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -21,78 +25,167 @@ export default function RecipeDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const handleVote = async () => {
+    if (!user) {
+      toast.error('Please login to vote');
+      return;
+    }
+    
+    if (!recipe || !id) return;
+    
+    setIsVoting(true);
+    
+    try {
+      if (hasVoted) {
+        await unvoteRecipe(Number(id));
+        toast.success('Vote removed successfully');
+      } else {
+        await voteRecipe(Number(id));
+        toast.success('Voted successfully');
+      }
+      
+      // Refresh recipe data
+      const response = await getRecipeById(Number(id));
+      setRecipe(response.data);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to vote');
+    } finally {
+      setIsVoting(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-10">Loading...</div>;
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!recipe) return null;
 
+  const hasVoted = user && recipe.votedUserIds?.includes(Number(user.id));
+  console.log(user);
+
+  const formatDateTime = (date: string) => {
+    const d = new Date(date);
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  };
+
   return (
-    <div className="max-w-2xl mx-auto p-4 bg-white min-h-screen">
-      
-      <div className="flex items-center mb-4">
-        <Button variant="ghost" size="icon" className="bg-blue-900 mr-2" onClick={() => navigate(-1)}>
-          <span className="text-2xl font-bold text-white mb-1">←</span>
+    <div className="max-w-2xl mx-auto px-6 py-4 sm:px-8 bg-white min-h-screen border-l border-r">
+      {/* Header with back button and title */}
+      <div className="flex items-center gap-2 mb-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-5 cursor-pointer"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowBigLeft />
         </Button>
-        <h1 className="text-2xl font-bold flex-1 text-black break-words">{recipe.name}</h1>
+        <h1 className="text-2xl font-bold flex-1 text-[var(--dark-blue)] break-words">{recipe.name}</h1>
       </div>
-      <div className="flex items-center mb-2 flex-wrap gap-2 justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Avatar>
-            <AvatarImage src={undefined} alt={recipe.user.name} />
-            <AvatarFallback>{recipe.user.name[0]}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm text-blue-900">by {recipe.user.name}</span>
-          <span className="text-xs text-gray-400 ml-2">{new Date(recipe.createdAt).toLocaleDateString()}</span>
+
+      {/* Metadata */}
+      <div className="mb-4 space-y-1">
+        <div className="text-sm text-[var(--dark-blue)]">
+          by {recipe.user.name}
         </div>
-        
-        <span className="inline-flex items-center gap-1 text-lg font-semibold ml-auto">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="#ef4444" viewBox="0 0 24 24" stroke="#ef4444" className="w-6 h-6">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-          </svg>
-          0
-        </span>
+        <div className="text-sm text-gray-500">
+          {formatDateTime(recipe.createdAt)}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Heart size={16} fill={hasVoted ? "#ef4444" : "none"} stroke="#ef4444" />
+          <span className="text-sm font-semibold text-[var(--dark-blue)]">
+            {recipe.votedUserIds?.length || 0}
+          </span>
+        </div>
       </div>
-      
-      <div className="flex items-center gap-2 mb-2 flex-wrap">
+
+      {/* Area and category tags */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         {recipe.area && (
-          <button className="px-2 py-1 rounded-full border text-yellow-900 border-yellow-900 text-xs hover:bg-yellow-100 transition-colors cursor-pointer">
+          <span className="px-3 py-1 rounded-full bg-[var(--shine-yellow)] text-[var(--dark-blue)] text-xs font-medium">
             {recipe.area.name}
-          </button>
+          </span>
         )}
         {recipe.categories && recipe.categories.length > 0 && recipe.categories.map(c => (
-          <button key={c.id} className="px-2 py-1 rounded-full border text-blue-900 border-blue-900 text-xs hover:bg-blue-100 transition-colors cursor-pointer">
+          <span
+            key={c.id}
+            className="px-3 py-1 rounded-full border-2 border-[var(--dark-blue)] text-[var(--dark-blue)] text-xs font-medium"
+          >
             {c.name}
-          </button>
+          </span>
         ))}
       </div>
-      
-      <div className="mb-4">
-        <p className="mb-2 text-black text-base md:text-lg break-words text-center">{recipe.description}</p>
+
+      {/* Description and thumbnail */}
+      <div className="mb-6">
+        <p className="mb-4 text-[var(--dark-blue)] text-sm leading-relaxed">
+          {recipe.description}
+        </p>
         {recipe.thumbnails && recipe.thumbnails[0] && (
-          <div className="flex justify-center">
-            <img src={recipe.thumbnails[0].url} alt={recipe.name} className="rounded-xl object-cover w-full max-w-md h-56 md:h-72" />
+          <div className="flex justify-center mb-6">
+            <img
+              src={recipe.thumbnails[0].url}
+              alt={recipe.name}
+              className="rounded-2xl object-cover w-full border-2 border-[var(--dark-blue-light)]"
+            />
           </div>
         )}
       </div>
-      <div className="mb-4">
-        <h2 className="font-semibold mb-2 text-blue-900">Ingredients</h2>
-        <ul className="list-disc list-inside">
-          {recipe.recipeIngredients.map(ri => (
-            <li key={ri.id}>{ri.ingredient.name} <span className="text-gray-500">({ri.quantity} {ri.unit})</span></li>
-          ))}
+
+      {/* Ingredients section */}
+      <div className="mb-6">
+        <h2 className="font-bold text-lg mb-3 text-[var(--dark-blue)]">Ingredients</h2>
+        <ul className="space-y-1">
+          {recipe.recipeIngredients
+            .sort((a, b) => a.order - b.order)
+            .map(ri => (
+              <li key={ri.id} className="text-[var(--dark-blue)] text-sm flex items-start">
+                <span className="mr-2">•</span>
+                <span>
+                  {ri.ingredient.name} - <span className="text-gray-600">{ri.quantity} {ri.unit}</span>
+                </span>
+              </li>
+            ))}
         </ul>
       </div>
-      <div className="mb-4">
-        <h2 className="font-semibold mb-2 text-blue-900">Steps</h2>
-        <ol className="list-decimal list-inside">
-          {recipe.steps.sort((a, b) => a.order - b.order).map(step => (
-            <li key={step.id} className="mb-1">{step.description}</li>
+
+      {/* Steps section */}
+      <div className="mb-8">
+        <h2 className="font-bold text-lg mb-3 text-[var(--dark-blue)]">Steps</h2>
+        <div className="space-y-4">
+          {recipe.steps.sort((a, b) => a.order - b.order).map((step) => (
+            <div key={step.id} className="space-y-2">
+              <p className="text-[var(--dark-blue)] text-sm leading-relaxed">
+                {step.description}
+              </p>
+              {step.attachments && step.attachments.length > 0 && (
+                <div className="rounded-2xl bg-[var(--shine-yellow)] p-4 h-40 flex items-center justify-center border-2 border-[var(--shine-yellow-dark)]">
+                  <img
+                    src={step.attachments[0].url}
+                    alt={`Step ${step.order}`}
+                    className="max-h-full max-w-full object-contain rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
           ))}
-        </ol>
+        </div>
       </div>
-      
-      <div className="flex gap-4 mt-8 justify-center">
-        <Button variant="outline" className="text-black border-black border-2 font-bold px-6 py-2">Vote</Button>
-        <Button variant="default" className="bg-blue-900 text-white font-bold px-6 py-2">Add to Favourite</Button>
+
+      {/* Vote section */}
+      <div className="mb-8 text-center">
+        <h3 className="font-bold text-base mb-3 text-[var(--dark-blue)]">Was this helpful?</h3>
+        <Button
+          variant="outline"
+          className="border-2 border-[var(--dark-blue)] text-[var(--dark-blue)] hover:bg-[var(--dark-blue)] hover:text-white font-semibold px-8 py-2 rounded-full cursor-pointer"
+          onClick={handleVote}
+          disabled={isVoting}
+        >
+          {isVoting ? 'Loading...' : hasVoted ? 'Unvote' : 'Vote'}
+        </Button>
       </div>
     </div>
   );
