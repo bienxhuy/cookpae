@@ -1,13 +1,22 @@
+import { createServer } from 'http';
 import app from "./app";
 import { AppDataSource } from "./data-source";
+import { initializeWebSocket } from "./services/websocket.service";
 
 const PORT = process.env.PORT || 3000;
+
+// Create HTTP server
+const httpServer = createServer(app);
 
 AppDataSource.initialize()
   .then(() => {
     console.log("Database connected");
 
-    app.listen(PORT, () => {
+    // Initialize WebSocket
+    initializeWebSocket(httpServer);
+    console.log("WebSocket initialized");
+
+    httpServer.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   })

@@ -5,11 +5,13 @@ import { AreaService } from './area.service';
 import { CategoryService } from './category.service';
 import { IngredientService } from './ingredient.service';
 import { VoteService } from './vote.service';
+import { NotificationService } from './notification.service';
 import { Recipe } from '../entities/Recipe';
 import { Step } from '../entities/Step';
 import { RecipeIngredient } from '../entities/RecipeIngredient';
 import { Attachment } from '../entities/Attachment';
 import { uploadImage, deleteImages } from './cloud.service';
+import { getWebSocketManager } from './websocket.service';
 
 export class RecipeService {
   private recipeRepository: RecipeRepository;
@@ -18,6 +20,7 @@ export class RecipeService {
   private categoryService: CategoryService;
   private ingredientService: IngredientService;
   private voteService: VoteService;
+  private notificationService: NotificationService;
 
   constructor(
     recipeRepository: RecipeRepository,
@@ -25,7 +28,8 @@ export class RecipeService {
     areaService: AreaService,
     categoryService: CategoryService,
     ingredientService: IngredientService,
-    voteService: VoteService
+    voteService: VoteService,
+    notificationService: NotificationService
   ) {
     this.recipeRepository = recipeRepository;
     this.userService = userService;
@@ -33,6 +37,7 @@ export class RecipeService {
     this.categoryService = categoryService;
     this.ingredientService = ingredientService;
     this.voteService = voteService;
+    this.notificationService = notificationService;
   }
 
   async createRecipe(data: {
@@ -355,8 +360,39 @@ export class RecipeService {
       throw new Error('Recipe not found');
     }
 
-    // Delegate to vote service
+    // Delegate to vote service - this updates the database first
     await this.voteService.addVote(userId, recipe);
+
+    // Create notification for recipe owner (only if voter is not the owner)
+    if (recipe.user.id !== userId) {
+      try {
+        const voter = await this.userService.getUserById(userId);
+        if (voter) {
+          const content = `${voter.name} Đã thích "${recipe.name}"`;
+          const link = `/recipes/${recipeId}`;
+          
+          // Save notification to database
+          const notification = await this.notificationService.createNotification(
+            recipe.user.id,
+            content,
+            link
+          );
+
+          // Emit real-time notification via WebSocket
+          const wsManager = getWebSocketManager();
+          wsManager.emitToUser(recipe.user.id, 'notification', {
+            id: notification.id,
+            content: notification.content,
+            link: notification.link,
+            isRead: notification.isRead,
+            createdAt: notification.createdAt.toISOString(),
+          });
+        }
+      } catch (error) {
+        console.error('Error creating notification:', error);
+        // Don't throw error, notification failure shouldn't break voting
+      }
+    }
   }
 
   async unvoteRecipe(recipeId: number, userId: number): Promise<void> {

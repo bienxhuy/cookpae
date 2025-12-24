@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
 import { AuthProvider } from './contexts/AuthContext'
+import { WebSocketProvider } from './contexts/WebSocketContext'
 
 // Register the service worker for PWA functionality
 registerSW({
@@ -18,7 +19,9 @@ registerSW({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <App />
+      <WebSocketProvider>
+        <App />
+      </WebSocketProvider>
     </AuthProvider>
   </StrictMode>,
 )
