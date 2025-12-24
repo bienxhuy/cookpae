@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import HomePage from './pages/HomePage';
-import NotificationPage from './pages/NotificationPage';
 import RecipePage from './pages/RecipePage';
 import SettingPage from './pages/SettingPage';
 import RecipeDetailPage from './pages/RecipeDetailPage';
+import CreateRecipePage from './pages/CreateRecipePage';
 import AssistantPage from './pages/AssistantPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import BotPage from './pages/BotPage';
@@ -27,6 +27,7 @@ function App() {
             <Route path="/bot" element={<BotPage />} />
             <Route path="/recipes" element={<RecipePage initialTab="favorite" />} />
             <Route path="/recipes/my" element={<RecipePage initialTab="your_recipe" />} />
+            <Route path="/recipes/create" element={<CreateRecipePage />} />
             <Route path="/notifications" element={<RecipePage initialTab="notification" />} />
             <Route path="/ingredients" element={<RecipePage initialTab="ingredient" />} />
 

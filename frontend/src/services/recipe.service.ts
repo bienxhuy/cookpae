@@ -89,6 +89,23 @@ type GetUserRecipesResponse = ApiResponse<GetUserRecipesData>;
 type GetUserRecipesCountResponse = ApiResponse<GetUserRecipesCountData>;
 
 /**
+ * Convert File to base64 string
+ */
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove the data URL prefix (e.g., "data:image/png;base64,")
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
+/**
  * Create a new recipe
  * @param data - Recipe creation data
  * @returns Promise with created recipe
@@ -96,45 +113,52 @@ type GetUserRecipesCountResponse = ApiResponse<GetUserRecipesCountData>;
 export const createRecipe = async (
   data: CreateRecipeRequest
 ): Promise<CreateRecipeResponse> => {
-  // Convert to FormData for file uploads
-  const formData = new FormData();
-  formData.append("name", data.name);
-  formData.append("description", data.description);
-  formData.append("userId", data.userId.toString());
-  formData.append("areaId", data.areaId.toString());
-  formData.append("categoryIds", JSON.stringify(data.categoryIds));
-
+  // Convert thumbnail images to base64
+  let thumbnailImagesBase64: { data: string }[] | undefined;
   if (data.thumbnailImages) {
-    data.thumbnailImages.forEach((file) => {
-      formData.append("thumbnailImages", file);
-    });
+    const base64Promises = data.thumbnailImages.map(file => fileToBase64(file));
+    const base64Strings = await Promise.all(base64Promises);
+    thumbnailImagesBase64 = base64Strings.map(data => ({ data }));
   }
 
+  // Convert step images to base64
+  let stepsWithBase64: { order: number; description: string; images?: { data: string }[] }[] | undefined;
   if (data.steps) {
-    formData.append("steps", JSON.stringify(data.steps.map(s => ({
-      order: s.order,
-      description: s.description
-    }))));
-    
-    data.steps.forEach((step, stepIndex) => {
-      if (step.images) {
-        step.images.forEach((file) => {
-          formData.append(`stepImages_${stepIndex}`, file);
-        });
-      }
-    });
+    stepsWithBase64 = await Promise.all(
+      data.steps.map(async (step) => {
+        let stepImagesBase64: { data: string }[] | undefined;
+        if (step.images && step.images.length > 0) {
+          const base64Promises = step.images.map(file => fileToBase64(file));
+          const base64Strings = await Promise.all(base64Promises);
+          stepImagesBase64 = base64Strings.map(data => ({ data }));
+        }
+        return {
+          order: step.order,
+          description: step.description,
+          images: stepImagesBase64,
+        };
+      })
+    );
   }
 
-  if (data.recipeIngredients) {
-    formData.append("recipeIngredients", JSON.stringify(data.recipeIngredients));
-  }
+  // Prepare JSON payload
+  const payload = {
+    name: data.name,
+    description: data.description,
+    userId: data.userId,
+    areaId: data.areaId,
+    categoryIds: data.categoryIds,
+    thumbnailImages: thumbnailImagesBase64,
+    steps: stepsWithBase64,
+    recipeIngredients: data.recipeIngredients,
+  };
 
   const response = await axiosInstance.post<CreateRecipeResponse>(
     "/api/recipes",
-    formData,
+    payload,
     {
       headers: {
-        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/json",
       },
     }
   );
@@ -177,45 +201,50 @@ export const updateRecipe = async (
   id: number,
   data: UpdateRecipeRequest
 ): Promise<UpdateRecipeResponse> => {
-  // Convert to FormData for file uploads
-  const formData = new FormData();
-  
-  if (data.name) formData.append("name", data.name);
-  if (data.description) formData.append("description", data.description);
-  if (data.areaId) formData.append("areaId", data.areaId.toString());
-  if (data.categoryIds) formData.append("categoryIds", JSON.stringify(data.categoryIds));
-
+  // Convert thumbnail images to base64
+  let thumbnailImagesBase64: { data: string }[] | undefined;
   if (data.thumbnailImages) {
-    data.thumbnailImages.forEach((file) => {
-      formData.append("thumbnailImages", file);
-    });
+    const base64Promises = data.thumbnailImages.map(file => fileToBase64(file));
+    const base64Strings = await Promise.all(base64Promises);
+    thumbnailImagesBase64 = base64Strings.map(data => ({ data }));
   }
 
+  // Convert step images to base64
+  let stepsWithBase64: { order: number; description: string; images?: { data: string }[] }[] | undefined;
   if (data.steps) {
-    formData.append("steps", JSON.stringify(data.steps.map(s => ({
-      order: s.order,
-      description: s.description
-    }))));
-    
-    data.steps.forEach((step, stepIndex) => {
-      if (step.images) {
-        step.images.forEach((file) => {
-          formData.append(`stepImages_${stepIndex}`, file);
-        });
-      }
-    });
+    stepsWithBase64 = await Promise.all(
+      data.steps.map(async (step) => {
+        let stepImagesBase64: { data: string }[] | undefined;
+        if (step.images && step.images.length > 0) {
+          const base64Promises = step.images.map(file => fileToBase64(file));
+          const base64Strings = await Promise.all(base64Promises);
+          stepImagesBase64 = base64Strings.map(data => ({ data }));
+        }
+        return {
+          order: step.order,
+          description: step.description,
+          images: stepImagesBase64,
+        };
+      })
+    );
   }
 
-  if (data.recipeIngredients) {
-    formData.append("recipeIngredients", JSON.stringify(data.recipeIngredients));
-  }
+  // Prepare JSON payload
+  const payload: any = {};
+  if (data.name) payload.name = data.name;
+  if (data.description) payload.description = data.description;
+  if (data.areaId) payload.areaId = data.areaId;
+  if (data.categoryIds) payload.categoryIds = data.categoryIds;
+  if (thumbnailImagesBase64) payload.thumbnailImages = thumbnailImagesBase64;
+  if (stepsWithBase64) payload.steps = stepsWithBase64;
+  if (data.recipeIngredients) payload.recipeIngredients = data.recipeIngredients;
 
   const response = await axiosInstance.put<UpdateRecipeResponse>(
     `/api/recipes/${id}`,
-    formData,
+    payload,
     {
       headers: {
-        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/json",
       },
     }
   );

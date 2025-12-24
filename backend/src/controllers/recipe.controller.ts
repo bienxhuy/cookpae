@@ -13,6 +13,7 @@ export class RecipeController {
   // POST /recipes
   async createRecipe(req: Request, res: Response): Promise<void> {
     try {
+      console.log('Create recipe request body:', req.body);
       const {
         name,
         description,

@@ -161,12 +161,19 @@ export default function RecipeDetailPage() {
                 {step.description}
               </p>
               {step.attachments && step.attachments.length > 0 && (
-                <div className="rounded-2xl bg-[var(--shine-yellow)] p-4 h-40 flex items-center justify-center border-2 border-[var(--shine-yellow-dark)]">
-                  <img
-                    src={step.attachments[0].url}
-                    alt={`Step ${step.order}`}
-                    className="max-h-full max-w-full object-contain rounded-lg"
-                  />
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {step.attachments.map((attachment, index) => (
+                    <div 
+                      key={attachment.id || index} 
+                      className="rounded-2xl bg-[var(--shine-yellow)] flex-shrink-0 flex items-center justify-center"
+                    >
+                      <img
+                        src={attachment.url}
+                        alt={`Step ${step.order} - Image ${index + 1}`}
+                        className="h-40 w-auto object-contain rounded-lg"
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
