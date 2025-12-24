@@ -59,7 +59,6 @@ export default function RecipeDetailPage() {
   if (!recipe) return null;
 
   const hasVoted = user && recipe.votedUserIds?.includes(Number(user.id));
-  console.log(user);
 
   const formatDateTime = (date: string) => {
     const d = new Date(date);
