@@ -7,12 +7,14 @@ import { AreaService } from '../services/area.service';
 import { CategoryService } from '../services/category.service';
 import { IngredientService } from '../services/ingredient.service';
 import { VoteService } from '../services/vote.service';
+import { NotificationService } from '../services/notification.service';
 import { RecipeRepository } from '../repositories/recipe.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { AreaRepository } from '../repositories/area.repository';
 import { CategoryRepository } from '../repositories/category.repository';
 import { IngredientRepository } from '../repositories/ingredient.repository';
 import { VoteRepository } from '../repositories/vote.repository';
+import { NotificationRepository } from '../repositories/notification.repository';
 import { AppDataSource } from '../data-source';
 
 // Initialize repositories
@@ -22,6 +24,7 @@ const areaRepository = new AreaRepository(AppDataSource);
 const categoryRepository = new CategoryRepository(AppDataSource);
 const ingredientRepository = new IngredientRepository(AppDataSource);
 const voteRepository = new VoteRepository(AppDataSource);
+const notificationRepository = new NotificationRepository(AppDataSource);
 
 // Initialize services
 const userService = new UserService(userRepository);
@@ -29,7 +32,8 @@ const areaService = new AreaService(areaRepository);
 const categoryService = new CategoryService(categoryRepository);
 const ingredientService = new IngredientService(ingredientRepository);
 const voteService = new VoteService(voteRepository, userService);
-const recipeService = new RecipeService(recipeRepository, userService, areaService, categoryService, ingredientService, voteService);
+const notificationService = new NotificationService(notificationRepository, userService);
+const recipeService = new RecipeService(recipeRepository, userService, areaService, categoryService, ingredientService, voteService, notificationService);
 
 // Initialize controller
 const recipeController = new RecipeController(recipeService);

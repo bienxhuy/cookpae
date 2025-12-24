@@ -321,7 +321,7 @@ export class RecipeController {
   async voteRecipe(req: Request, res: Response): Promise<void> {
     try {
       const recipeId = parseInt(req.params.id, 10);
-      const userId = 1; // Hardcoded user ID for now
+      const userId = 2; // Hardcoded user ID for now, TODO: get from auth
       
       await this.recipeService.voteRecipe(recipeId, userId);
       res.status(200).json({ status: "success", message: 'Vote added successfully' });
@@ -347,7 +347,7 @@ export class RecipeController {
   async unvoteRecipe(req: Request, res: Response): Promise<void> {
     try {
       const recipeId = parseInt(req.params.id, 10);
-      const userId = 1; // Hardcoded user ID for now
+      const userId = 2; // Hardcoded user ID for now, TODO: get from auth
       
       await this.recipeService.unvoteRecipe(recipeId, userId);
       res.status(200).json({ status: "success", message: 'Vote removed successfully' });
